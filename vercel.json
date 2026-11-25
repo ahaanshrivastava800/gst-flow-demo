@@ -1,0 +1,33 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "functions": {
+    "app/api/sync/upload/route.js": {
+      "maxDuration": 10
+    },
+    "app/api/async/upload/route.js": {
+      "maxDuration": 10
+    },
+    "app/api/async/process-job/route.js": {
+      "maxDuration": 60
+    },
+    "app/api/async/status/route.js": {
+      "maxDuration": 10
+    },
+    "app/api/simulate/load/route.js": {
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "UPSTASH_REDIS_REST_URL": "@upstash-redis-url",
+    "UPSTASH_REDIS_REST_TOKEN": "@upstash-redis-token"
+  },
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
+    }
+  ]
+}

@@ -1,0 +1,279 @@
+# GST Flow Demo - Architecture Diagrams
+
+## Synchronous Architecture (Legacy)
+
+```
+┌─────────────┐
+│   Client    │
+│  (Browser)  │
+└──────┬──────┘
+       │ 1. Upload GST Data
+       │    (Large File)
+       ▼
+┌─────────────────────────────┐
+│   Vercel Serverless        │
+│   /api/sync/upload         │
+│                             │
+│  ┌─────────────────────┐   │
+│  │ Validate Payload    │   │
+│  │ Process Row-by-Row  │   │
+│  │ (100ms per row)     │   │
+│  └─────────────────────┘   │
+│                             │
+│  ⏱️ BLOCKING CONNECTION     │
+│  ⚠️ TIMEOUT RISK           │
+└──────┬──────────────────────┘
+       │ 2. Blocks for 10+ seconds
+       │    (Vercel limit exceeded)
+       ▼
+┌─────────────────────────────┐
+│  ❌ 504 Gateway Timeout    │
+│  ⚠️ Request Failed         │
+└─────────────────────────────┘
+
+PROBLEMS:
+• Requests timeout under load
+• Poor user experience (blocking)
+• No scalability for large files
+• Server resources wasted
+```
+
+## Asynchronous Architecture (Modern)
+
+```
+┌─────────────┐
+│   Client    │
+│  (Browser)  │
+└──────┬──────┘
+       │ 1. Upload GST Data
+       │    (Large File)
+       ▼
+┌─────────────────────────────┐
+│   Vercel Serverless        │
+│   /api/async/upload        │
+│                             │
+│  ┌─────────────────────┐   │
+│  │ Tier-1 Validation   │   │
+│  │ Generate Job ID     │   │
+│  │ Queue in Redis      │   │
+│  └─────────────────────┘   │
+│                             │
+│  ✅ INSTANT RESPONSE       │
+│  202 Accepted + Job ID     │
+└──────┬──────────────────────┘
+       │ 2. Return immediately
+       │    (202 Accepted)
+       ▼
+┌─────────────┐
+│   Client    │◄─────────────┐
+│  (Browser)  │              │
+└──────┬──────┘              │
+       │ 3. Poll Status      │
+       │    /api/async/status│
+       ▼                     │
+┌─────────────────────────────┐│
+│   Upstash Redis             ││
+│                             ││
+│  ┌─────────────────────┐   ││
+│  │ Job Queue           │   ││
+│  │ Status: queued      │   ││
+│  │ Progress: 0%        │   ││
+│  └─────────────────────┘   ││
+└──────┬──────────────────────┘│
+       │                       │
+       │ 4. Background Worker   │
+       ▼                       │
+┌─────────────────────────────┐│
+│   Vercel Serverless        ││
+│   /api/async/process-job   ││
+│                             ││
+│  ┌─────────────────────┐   ││
+│  │ Process Row-by-Row  │   ││
+│  │ Update Progress     │   ││
+│  │ Status: processing  │   ││
+│  └─────────────────────┘   ││
+└──────┬──────────────────────┘│
+       │                       │
+       │ 5. Update Status      │
+       ▼                       │
+┌─────────────────────────────┐│
+│   Upstash Redis             ││
+│                             ││
+│  ┌─────────────────────┐   ││
+│  │ Status: processing  │   ││
+│  │ Progress: 50%       │   ││
+│  └─────────────────────┘   ││
+└─────────────────────────────┘│
+                                │
+                                │ (Repeat until complete)
+                                │
+┌─────────────────────────────┐│
+│   Upstash Redis             ││
+│                             ││
+│  ┌─────────────────────┐   ││
+│  │ Status: completed    │   ││
+│  │ Progress: 100%       │   ││
+│  │ Results Available   │   ││
+│  └─────────────────────┘   ││
+└─────────────────────────────┘│
+                                │
+                                │ 6. Final Status
+                                ▼
+┌─────────────┐
+│   Client    │
+│  ✅ Done    │
+└─────────────┘
+
+BENEFITS:
+• No timeout issues
+• Instant user feedback
+• Scales to large files
+• Efficient resource usage
+• Real-time progress tracking
+```
+
+## Load Testing Comparison
+
+### Synchronous Load Test
+```
+50 Concurrent Requests → /api/sync/upload
+│
+├─ Request 1: ❌ Timeout (10.2s)
+├─ Request 2: ❌ Timeout (10.5s)
+├─ Request 3: ❌ Timeout (10.1s)
+├─ Request 4: ✅ Success (9.8s)
+├─ Request 5: ❌ Timeout (10.3s)
+├─ ... (45 more timeouts)
+│
+Result: 4% Success, 96% Timeout
+```
+
+### Asynchronous Load Test
+```
+50 Concurrent Requests → /api/async/upload
+│
+├─ Request 1: ✅ 202 Accepted (0.1s)
+├─ Request 2: ✅ 202 Accepted (0.1s)
+├─ Request 3: ✅ 202 Accepted (0.1s)
+├─ Request 4: ✅ 202 Accepted (0.1s)
+├─ Request 5: ✅ 202 Accepted (0.1s)
+├─ ... (45 more 202 responses)
+│
+Result: 100% Queued, Processing in background
+```
+
+## System Components
+
+### Frontend (Next.js + React)
+```
+┌─────────────────────────────────┐
+│         Next.js App             │
+│                                 │
+│  ┌─────────────────────────┐   │
+│  │ LoginMock Component     │   │
+│  │ FileUpload Component    │   │
+│  │ SyncFilingView          │   │
+│  │ AsyncFilingView         │   │
+│  │ LoadSimulatorButton     │   │
+│  │ ArchitectureDiagram     │   │
+│  └─────────────────────────┘   │
+│                                 │
+│  ┌─────────────────────────┐   │
+│  │ API Client              │   │
+│  │ - syncUpload()          │   │
+│  │ - asyncUpload()         │   │
+│  │ - getJobStatus()        │   │
+│  │ - pollJobStatus()       │   │
+│  │ - runLoadTest()         │   │
+│  └─────────────────────────┘   │
+└─────────────────────────────────┘
+```
+
+### Backend (Vercel Serverless)
+```
+┌─────────────────────────────────┐
+│      Vercel API Routes          │
+│                                 │
+│  /api/sync/upload               │
+│  ├─ POST: Blocking upload      │
+│  └─ Response: 200/504           │
+│                                 │
+│  /api/async/upload              │
+│  ├─ POST: Non-blocking upload   │
+│  └─ Response: 202 + job ID      │
+│                                 │
+│  /api/async/process-job         │
+│  ├─ POST: Background worker     │
+│  └─ Updates Redis status        │
+│                                 │
+│  /api/async/status              │
+│  ├─ GET: Job status check       │
+│  └─ Response: JSON or SSE       │
+│                                 │
+│  /api/simulate/load             │
+│  ├─ POST: Load testing         │
+│  └─ Response: Test results      │
+└─────────────────────────────────┘
+```
+
+### Data Layer (Upstash Redis)
+```
+┌─────────────────────────────────┐
+│       Upstash Redis              │
+│                                 │
+│  Data Structures:               │
+│  ├─ job:{jobId}                 │
+│  │  └─ Job metadata & status   │
+│  ├─ gst:queue                   │
+│  │  └─ Job queue (list)        │
+│  └─ TTL: 24 hours              │
+│                                 │
+│  Operations:                    │
+│  ├─ SET job:{id} data          │
+│  ├─ GET job:{id}               │
+│  ├─ LPUSH gst:queue {id}       │
+│  └─ LREM gst:queue 0 {id}      │
+└─────────────────────────────────┘
+```
+
+## Deployment Architecture
+
+```
+┌─────────────────────────────────┐
+│         Vercel Platform         │
+│                                 │
+│  ┌─────────────────────────┐   │
+│  │ Edge Network           │   │
+│  │ Global CDN              │   │
+│  └─────────────────────────┘   │
+│                                 │
+│  ┌─────────────────────────┐   │
+│  │ Serverless Functions    │   │
+│  │ - API Routes            │   │
+│  │ - Background Workers    │   │
+│  │ - Edge Functions        │   │
+│  └─────────────────────────┘   │
+│                                 │
+│  ┌─────────────────────────┐   │
+│  │ Environment Variables    │   │
+│  │ - Redis URL             │   │
+│  │ - Redis Token           │   │
+│  └─────────────────────────┘   │
+└──────────────┬──────────────────┘
+               │
+               ▼
+┌─────────────────────────────────┐
+│       Upstash Redis             │
+│  (HTTP-based Redis compatible)  │
+│                                 │
+│  - Queue management             │
+│  - Job state storage            │
+│  - TTL management              │
+└─────────────────────────────────┘
+```
+
+Note: For a visual diagram, create a PNG/SVG file using tools like:
+- draw.io
+- Lucidchart
+- Figma
+- Excalidraw
