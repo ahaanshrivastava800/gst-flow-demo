@@ -1,6 +1,6 @@
 # GST Flow Demo
 
-A production-ready demonstration showcasing the modernization of a Goods and Services Tax (GST) filing system from legacy synchronous processing to a modern asynchronous producer-consumer architecture.
+A demonstration project comparing synchronous and asynchronous processing for a Goods and Services Tax (GST) filing system.
 
 ## 🚀 Features
 
@@ -131,38 +131,27 @@ Simply import the repository in Vercel, add environment variables, and deploy.
 
 ```
 gst-flow-demo/
-├── app/                          # Next.js App Router
-│   ├── api/                     # API Routes
-│   │   ├── sync/
-│   │   │   └── upload/route.ts  # Blocking upload endpoint
+├── app/                         # Next.js App Router
+│   ├── api/                     # API routes
+│   │   ├── sync/upload/route.js
 │   │   ├── async/
-│   │   │   ├── upload/route.ts # Non-blocking upload
-│   │   │   ├── status/route.ts # Job status check
-│   │   │   └── process-job/route.ts # Background worker
-│   │   └── simulate/
-│   │       └── load/route.ts   # Load testing endpoint
-│   ├── layout.tsx              # Root layout
-│   ├── page.tsx                # Main application page
-│   └── globals.css             # Global styles
-├── src/                         # Source code
-│   ├── components/             # React components
-│   │   ├── LoginMock.jsx       # Mock login component
-│   │   ├── SyncFilingView.jsx  # Sync processing view
-│   │   ├── AsyncFilingView.jsx # Async processing view
-│   │   ├── LoadSimulatorButton.jsx # Load testing UI
-│   │   └── ArchitectureDiagram.jsx # Architecture visualization
-│   └── api/                    # Client API layer
-│       └── client.js           # API client with polling/SSE
-├── docs/                        # Documentation
-│   ├── project-summary.md      # Project overview
-│   └── architecture-diagram.txt # Architecture diagrams
-├── public/                      # Static assets
-├── .env.example                # Environment variables template
-├── vercel.json                 # Vercel configuration
-├── next.config.js              # Next.js configuration
-├── tailwind.config.ts          # Tailwind CSS configuration
-├── tsconfig.json               # TypeScript configuration
-└── package.json                # Dependencies and scripts
+│   │   │   ├── upload/route.js
+│   │   │   ├── status/route.js
+│   │   │   └── process-job/route.js
+│   │   └── simulate/load/route.js
+│   ├── globals.css
+│   ├── layout.js
+│   └── page.jsx
+├── src/
+│   ├── api/client.js            # Client API layer
+│   └── components/              # React components
+├── docs/                         # Project and architecture documentation
+├── next.config.js               # Next.js configuration
+├── postcss.config.js            # PostCSS configuration
+├── tailwind.config.js           # Tailwind CSS configuration
+├── vercel.json                  # Vercel configuration
+├── package.json                 # Dependencies and scripts
+└── package-lock.json            # Locked dependency versions
 ```
 
 ## 🔧 API Endpoints
@@ -241,7 +230,7 @@ Background worker endpoint (triggered automatically).
 ### Load Testing
 
 #### `POST /api/simulate/load`
-Run load tests with concurrent requests.
+Run the built-in load-test simulation with concurrent requests. Its results are illustrative demo output, not measurements from a production workload.
 
 **Request:**
 ```json
@@ -323,7 +312,9 @@ Run load tests with concurrent requests.
 | Large upload (500 rows) | Timeout | ~0.1s |
 | Status check | N/A | ~0.1s |
 
-### Load Test Results (50 concurrent requests)
+### Example Simulated Load-Test Results (50 concurrent requests)
+
+The figures below are illustrative results from the demo's load simulator. They are not production benchmarks and may vary with the demo configuration and environment.
 
 | Metric | Sync Mode | Async Mode |
 |--------|-----------|------------|
