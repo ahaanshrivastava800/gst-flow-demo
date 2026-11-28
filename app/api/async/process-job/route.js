@@ -1,11 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { Redis } from '@upstash/redis';
-
-// Initialize Upstash Redis client
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || '',
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
-});
+import { NextResponse } from 'next/server';
+import { getRedisClient } from '../../../../src/lib/redis';
 
 // Simulate processing delay
 function sleep(ms) {
@@ -14,14 +8,13 @@ function sleep(ms) {
 
 // Process individual GST row
 async function processRow(row, index) {
-  // Simulate validation and processing
   await sleep(100); // 100ms per row
-  
+
   // Simulate occasional complex validation
   if (index % 10 === 0) {
-    await sleep(200); // Extra time for complex cases
+    await sleep(200);
   }
-  
+
   return {
     row: index + 1,
     gstin: row.gstin,
@@ -31,21 +24,31 @@ async function processRow(row, index) {
 }
 
 // Update job progress in Redis
-async function updateJobProgress(jobId, updates) {
+async function updateJobProgress(redis, jobId, updates) {
   const currentJob = await redis.get(`job:${jobId}`);
   if (!currentJob) return null;
-  
+
   const jobData = typeof currentJob === 'string' ? JSON.parse(currentJob) : currentJob;
   const updatedJob = { ...jobData, ...updates, updatedAt: new Date().toISOString() };
-  
+
   await redis.set(`job:${jobId}`, JSON.stringify(updatedJob), { ex: 86400 });
   return updatedJob;
 }
 
 export async function POST(request) {
+  let jobId;
+  const redis = getRedisClient();
+
   try {
+    if (!redis) {
+      return NextResponse.json(
+        { error: 'Redis is not configured; background worker unavailable in demo mode' },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
-    const { jobId } = body;
+    jobId = body?.jobId;
 
     if (!jobId) {
       return NextResponse.json(
@@ -75,28 +78,25 @@ export async function POST(request) {
     }
 
     // Update status to processing
-    await updateJobProgress(jobId, { status: 'processing' });
+    await updateJobProgress(redis, jobId, { status: 'processing' });
 
-    // Simulate getting the original payload (in real app, would store separately)
-    // For demo, we'll generate sample rows based on totalRows count
     const totalRows = job.totalRows || 100;
     const results = [];
-    
+
     // Process rows incrementally
     for (let i = 0; i < totalRows; i++) {
-      // Simulate row data
       const mockRow = {
-        gstin: `27AABCU9603R1Z${(i % 10).toString()}`, // Mock GSTIN
+        gstin: `27AABCU9603R1Z${(i % 10).toString()}`,
         amount: Math.floor(Math.random() * 100000),
         description: `Transaction ${i + 1}`
       };
-      
+
       const result = await processRow(mockRow, i);
       results.push(result);
-      
+
       // Update progress every 10 rows
       if ((i + 1) % 10 === 0) {
-        await updateJobProgress(jobId, {
+        await updateJobProgress(redis, jobId, {
           processedRows: i + 1,
           status: 'processing',
           progress: Math.round(((i + 1) / totalRows) * 100)
@@ -105,7 +105,7 @@ export async function POST(request) {
     }
 
     // Mark job as completed
-    const finalJob = await updateJobProgress(jobId, {
+    const finalJob = await updateJobProgress(redis, jobId, {
       status: 'completed',
       processedRows: totalRows,
       progress: 100,
@@ -124,11 +124,10 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('Process job error:', error);
-    
-    // Try to update job status to failed
-    if (body.jobId) {
+
+    if (redis && jobId) {
       try {
-        await updateJobProgress(body.jobId, {
+        await updateJobProgress(redis, jobId, {
           status: 'failed',
           error: error instanceof Error ? error.message : 'Unknown error'
         });
@@ -136,7 +135,7 @@ export async function POST(request) {
         console.error('Failed to update job status:', updateError);
       }
     }
-    
+
     return NextResponse.json(
       { error: 'Internal server error during job processing' },
       { status: 500 }

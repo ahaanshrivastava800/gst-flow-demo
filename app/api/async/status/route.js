@@ -1,11 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { Redis } from '@upstash/redis';
+import { NextResponse } from 'next/server';
+import { getRedisClient, getDemoJobFallback } from '../../../../src/lib/redis';
 
-// Initialize Upstash Redis client
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || '',
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
-});
+export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   try {
@@ -20,54 +16,45 @@ export async function GET(request) {
       );
     }
 
-    // Check if Redis is configured
-    const isRedisConfigured = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN;
+    const redis = getRedisClient();
 
     // Handle Server-Sent Events
     if (format === 'sse') {
       const encoder = new TextEncoder();
-      
+
       const stream = new ReadableStream({
         async start(controller) {
           try {
             let lastStatus = null;
             let iterations = 0;
             const maxIterations = 60; // 60 seconds max
-            
+
             while (iterations < maxIterations) {
-              let jobData;
-              
-              if (isRedisConfigured) {
-                jobData = await redis.get(`job:${jobId}`);
-              } else {
-                // Demo mode
-                jobData = global.demoJobs ? global.demoJobs[jobId] : null;
-              }
-              
+              const jobData = redis
+                ? await redis.get(`job:${jobId}`)
+                : getDemoJobFallback(jobId);
+
               if (!jobData) {
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Job not found' })}\n\n`));
                 break;
               }
-              
+
               const job = typeof jobData === 'string' ? JSON.parse(jobData) : jobData;
-              
+
               // Only send if status changed
               if (JSON.stringify(job) !== JSON.stringify(lastStatus)) {
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify(job)}\n\n`));
                 lastStatus = job;
-                
-                // Stop if job is complete
+
                 if (job.status === 'completed' || job.status === 'failed') {
                   break;
                 }
               }
-              
-              // Wait 1 second before next check
+
               await new Promise(resolve => setTimeout(resolve, 1000));
               iterations++;
             }
-            
-            // Send final close event
+
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'close' })}\n\n`));
             controller.close();
           } catch (error) {
@@ -87,15 +74,10 @@ export async function GET(request) {
     }
 
     // Handle regular JSON response
-    let jobData;
-    
-    if (isRedisConfigured) {
-      jobData = await redis.get(`job:${jobId}`);
-    } else {
-      // Demo mode
-      jobData = global.demoJobs ? global.demoJobs[jobId] : null;
-    }
-    
+    const jobData = redis
+      ? await redis.get(`job:${jobId}`)
+      : getDemoJobFallback(jobId);
+
     if (!jobData) {
       return NextResponse.json(
         { error: 'Job not found' },

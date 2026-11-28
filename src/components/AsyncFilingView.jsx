@@ -1,12 +1,30 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function AsyncFilingView({ onUpload, uploadResult, isLoading }) {
   const [jobStatus, setJobStatus] = useState(null);
   const [polling, setPolling] = useState(false);
+  const [recordCount, setRecordCount] = useState(100);
+  const pollTimerRef = useRef(null);
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (pollTimerRef.current) {
+        clearTimeout(pollTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (pollTimerRef.current) {
+      clearTimeout(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+
     if (uploadResult && uploadResult.jobId) {
       setJobStatus({
         jobId: uploadResult.jobId,
@@ -23,21 +41,21 @@ export default function AsyncFilingView({ onUpload, uploadResult, isLoading }) {
   };
 
   const pollJobStatus = async (jobId) => {
+    if (!isMountedRef.current) return;
+
     try {
-      console.log('Polling job status for:', jobId);
-      const response = await fetch(`/api/async/status?jobId=${jobId}`);
+      const response = await fetch(`/api/async/status?jobId=${encodeURIComponent(jobId)}`);
       const data = await response.json();
-      console.log('Poll response:', data);
-      
+
+      if (!isMountedRef.current) return;
+
       if (data.success && data.job) {
         setJobStatus(data.job);
-        
-        // Continue polling if job is still processing
+
         if (data.job.status === 'queued' || data.job.status === 'processing') {
-          setTimeout(() => pollJobStatus(jobId), 1000);
+          pollTimerRef.current = setTimeout(() => pollJobStatus(jobId), 1000);
         } else {
           setPolling(false);
-          console.log('Job completed with status:', data.job.status);
         }
       } else {
         console.error('Polling failed:', data);
@@ -45,7 +63,9 @@ export default function AsyncFilingView({ onUpload, uploadResult, isLoading }) {
       }
     } catch (error) {
       console.error('Polling error:', error);
-      setPolling(false);
+      if (isMountedRef.current) {
+        setPolling(false);
+      }
     }
   };
 
@@ -98,7 +118,8 @@ export default function AsyncFilingView({ onUpload, uploadResult, isLoading }) {
             </label>
             <select 
               className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-              defaultValue="100"
+              value={recordCount}
+              onChange={(e) => setRecordCount(parseInt(e.target.value, 10))}
               id="async-record-count"
             >
               <option value="50">50 records</option>
@@ -110,8 +131,7 @@ export default function AsyncFilingView({ onUpload, uploadResult, isLoading }) {
 
           <button
             onClick={() => {
-              const count = parseInt(document.getElementById('async-record-count').value);
-              const mockRows = Array.from({ length: count }, (_, i) => ({
+              const mockRows = Array.from({ length: recordCount }, (_, i) => ({
                 gstin: `27AABCU9603R1Z${(i % 10).toString()}`,
                 amount: Math.floor(Math.random() * 100000),
                 description: `Transaction ${i + 1}`,
@@ -141,7 +161,7 @@ export default function AsyncFilingView({ onUpload, uploadResult, isLoading }) {
               {getStatusIcon()} Job Status
             </h3>
             <span className="text-sm text-gray-900">
-              ID: {jobStatus.jobId?.slice(0, 12)}...
+              ID: {(jobStatus.jobId || jobStatus.id)?.slice(0, 16)}...
             </span>
           </div>
 

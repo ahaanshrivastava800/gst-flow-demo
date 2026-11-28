@@ -2,6 +2,22 @@
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
+async function parseResponseJson(response) {
+  const text = await response.text();
+  if (!text) {
+    return {};
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {
+      error: response.status === 504
+        ? 'Gateway Timeout (504): Request exceeded Vercel execution limit'
+        : response.statusText || 'Unexpected non-JSON response from server'
+    };
+  }
+}
+
 export const apiClient = {
   // Sync upload - blocks until complete or timeout
   async syncUpload(data) {
@@ -14,7 +30,7 @@ export const apiClient = {
     });
     
     const endTime = Date.now();
-    const result = await response.json();
+    const result = await parseResponseJson(response);
     console.log('API Client: Sync upload response:', result);
     return {
       ...result,
@@ -33,7 +49,7 @@ export const apiClient = {
       body: JSON.stringify(data)
     });
     
-    const result = await response.json();
+    const result = await parseResponseJson(response);
     console.log('API Client: Async upload response:', result);
     return {
       ...result,
@@ -44,8 +60,8 @@ export const apiClient = {
 
   // Check job status (polling)
   async getJobStatus(jobId) {
-    const response = await fetch(`${API_BASE}/api/async/status?jobId=${jobId}`);
-    const result = await response.json();
+    const response = await fetch(`${API_BASE}/api/async/status?jobId=${encodeURIComponent(jobId)}`);
+    const result = await parseResponseJson(response);
     return {
       ...result,
       success: response.ok
@@ -55,7 +71,7 @@ export const apiClient = {
   // Server-Sent Events for real-time updates
   subscribeToJobUpdates(jobId, onMessage, onError, onComplete) {
     const eventSource = new EventSource(
-      `${API_BASE}/api/async/status?jobId=${jobId}&format=sse`
+      `${API_BASE}/api/async/status?jobId=${encodeURIComponent(jobId)}&format=sse`
     );
 
     eventSource.onmessage = (event) => {

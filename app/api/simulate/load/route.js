@@ -30,9 +30,8 @@ export async function POST(request) {
       );
     }
 
-    const baseUrl = process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
-      : 'http://localhost:3000';
+    const baseUrl = request.nextUrl?.origin
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
     const targetUrl = target === 'sync' 
       ? `${baseUrl}/api/sync/upload`

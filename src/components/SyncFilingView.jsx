@@ -3,6 +3,8 @@
 import { useState } from 'react';
 
 export default function SyncFilingView({ onUpload, uploadResult, isLoading }) {
+  const [recordCount, setRecordCount] = useState(100);
+
   const handleUpload = async (data) => {
     await onUpload(data);
   };
@@ -93,7 +95,8 @@ export default function SyncFilingView({ onUpload, uploadResult, isLoading }) {
           </label>
           <select 
             className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-            defaultValue="100"
+            value={recordCount}
+            onChange={(e) => setRecordCount(parseInt(e.target.value, 10))}
             id="sync-record-count"
           >
             <option value="50">50 records (5s processing)</option>
@@ -104,8 +107,7 @@ export default function SyncFilingView({ onUpload, uploadResult, isLoading }) {
 
         <button
           onClick={() => {
-            const count = parseInt(document.getElementById('sync-record-count').value);
-            const mockRows = Array.from({ length: count }, (_, i) => ({
+            const mockRows = Array.from({ length: recordCount }, (_, i) => ({
               gstin: `27AABCU9603R1Z${(i % 10).toString()}`,
               amount: Math.floor(Math.random() * 100000),
               description: `Transaction ${i + 1}`,
