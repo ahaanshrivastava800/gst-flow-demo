@@ -2,6 +2,8 @@
 
 A demonstration project comparing synchronous and asynchronous processing for a Goods and Services Tax (GST) filing system.
 
+**Live Demo:** [https://gst-flow-demo.vercel.app](https://gst-flow-demo.vercel.app)
+
 ## 🚀 Features
 
 - **Dual Mode Comparison**: Toggle between legacy sync and modern async processing
@@ -36,7 +38,7 @@ A demonstration project comparing synchronous and asynchronous processing for a 
 ### 1. Clone the Repository
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/ahaanshrivastava800/gst-flow-demo.git
 cd gst-flow-demo
 ```
 
@@ -121,11 +123,11 @@ vercel --prod
 
 The repository includes `vercel.json` with pre-configured settings:
 
-- Function timeouts configured for each endpoint
-- Region optimized for performance
-- Automatic routing for API endpoints
+- 10s `maxDuration` configured on `/api/sync/upload`, `/api/async/upload`, and `/api/async/status` (compatible with Vercel Hobby and Pro plans)
+- `iad1` region configured for serverless functions
+- Works out of the box in **Demo Mode** without Redis, or with **Upstash Redis** when `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are set in Vercel Environment Variables
 
-Simply import the repository in Vercel, add environment variables, and deploy.
+Simply import the repository in Vercel and deploy (optionally adding your Upstash Redis environment variables).
 
 ## 📁 Project Structure
 
@@ -144,6 +146,7 @@ gst-flow-demo/
 │   └── page.jsx
 ├── src/
 │   ├── api/client.js            # Client API layer
+│   ├── lib/redis.js             # Lazy Upstash Redis client & stateless demo fallback
 │   └── components/              # React components
 ├── docs/                         # Project and architecture documentation
 ├── next.config.js               # Next.js configuration

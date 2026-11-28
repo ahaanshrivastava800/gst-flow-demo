@@ -99,7 +99,7 @@ export default function LoadSimulatorButton({ mode }) {
 
       {results && results.summary && (
         <div className="mt-6 space-y-4">
-          <h4 className="font-semibold text-gray-800">Load Test Results</h4>
+          <h4 className="font-semibold text-slate-900">Load Test Results</h4>
           
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-blue-50 p-3 rounded-lg">
@@ -111,7 +111,7 @@ export default function LoadSimulatorButton({ mode }) {
               <div className={`text-2xl font-bold ${mode === 'sync' ? 'text-green-600' : 'text-indigo-600'}`}>
                 {results.summary.successful}
               </div>
-              <div className="text-sm text-gray-800">Successful (200)</div>
+              <div className="text-sm text-slate-800">Successful (200)</div>
             </div>
             
             {mode === 'async' && (
@@ -126,18 +126,18 @@ export default function LoadSimulatorButton({ mode }) {
               <div className="text-sm text-red-800">Timeouts (504)</div>
             </div>
             
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <div className="text-2xl font-bold text-gray-600">{results.summary.errors}</div>
-              <div className="text-sm text-gray-800">Errors</div>
+            <div className="bg-slate-100 p-3 rounded-lg">
+              <div className="text-2xl font-bold text-slate-800">{results.summary.errors}</div>
+              <div className="text-sm text-slate-800">Errors</div>
             </div>
             
             <div className="bg-yellow-50 p-3 rounded-lg">
-              <div className="text-2xl font-bold text-yellow-600">{results.summary.avgDuration}ms</div>
+              <div className="text-2xl font-bold text-yellow-700">{results.summary.avgDuration}ms</div>
               <div className="text-sm text-yellow-800">Avg Duration</div>
             </div>
           </div>
 
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-slate-700">
             <p><strong>Duration Range:</strong> {results.summary.minDuration}ms - {results.summary.maxDuration}ms</p>
             <p><strong>Target:</strong> {results.summary.target} endpoint</p>
             <p><strong>Rows per Request:</strong> {results.summary.rowsPerRequest}</p>

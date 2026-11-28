@@ -3,97 +3,14 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #f8fafc;
+  --foreground: #0f172a;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
-}
-
-/* Change all gray text to black - target text elements specifically */
-span.text-gray-100,
-span.text-gray-200,
-span.text-gray-300,
-span.text-gray-400,
-span.text-gray-500,
-span.text-gray-600,
-span.text-gray-700,
-span.text-gray-800,
-span.text-gray-900,
-p.text-gray-100,
-p.text-gray-200,
-p.text-gray-300,
-p.text-gray-400,
-p.text-gray-500,
-p.text-gray-600,
-p.text-gray-700,
-p.text-gray-800,
-p.text-gray-900,
-label.text-gray-100,
-label.text-gray-200,
-label.text-gray-300,
-label.text-gray-400,
-label.text-gray-500,
-label.text-gray-600,
-label.text-gray-700,
-label.text-gray-800,
-label.text-gray-900,
-h1.text-gray-100,
-h1.text-gray-200,
-h1.text-gray-300,
-h1.text-gray-400,
-h1.text-gray-500,
-h1.text-gray-600,
-h1.text-gray-700,
-h1.text-gray-800,
-h1.text-gray-900,
-h2.text-gray-100,
-h2.text-gray-200,
-h2.text-gray-300,
-h2.text-gray-400,
-h2.text-gray-500,
-h2.text-gray-600,
-h2.text-gray-700,
-h2.text-gray-800,
-h2.text-gray-900,
-h3.text-gray-100,
-h3.text-gray-200,
-h3.text-gray-300,
-h3.text-gray-400,
-h3.text-gray-500,
-h3.text-gray-600,
-h3.text-gray-700,
-h3.text-gray-800,
-h3.text-gray-900,
-h4.text-gray-100,
-h4.text-gray-200,
-h4.text-gray-300,
-h4.text-gray-400,
-h4.text-gray-500,
-h4.text-gray-600,
-h4.text-gray-700,
-h4.text-gray-800,
-h4.text-gray-900,
-div.text-gray-100,
-div.text-gray-200,
-div.text-gray-300,
-div.text-gray-400,
-div.text-gray-500,
-div.text-gray-600,
-div.text-gray-700,
-div.text-gray-800,
-div.text-gray-900 {
-  color: #000000 !important;
 }
 
 @layer utilities {

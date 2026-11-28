@@ -117,7 +117,7 @@ export default function AsyncFilingView({ onUpload, uploadResult, isLoading }) {
               Number of Records
             </label>
             <select 
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-slate-900 bg-white"
               value={recordCount}
               onChange={(e) => setRecordCount(parseInt(e.target.value, 10))}
               id="async-record-count"
@@ -150,7 +150,7 @@ export default function AsyncFilingView({ onUpload, uploadResult, isLoading }) {
             {isLoading ? '⏳ Uploading...' : '📤 Upload for Async Processing'}
           </button>
 
-          <p className="text-xs text-gray-500 text-center mt-4">
+          <p className="text-xs text-slate-700 text-center mt-4">
             Upload returns immediately with job ID. Processing happens in background.
           </p>
         </div>

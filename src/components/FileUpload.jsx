@@ -74,7 +74,7 @@ export default function FileUpload({ onUpload, isLoading }) {
       <h3 className="text-lg font-semibold mb-4">Upload GST Filing Data</h3>
       
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-slate-800 mb-2">
           Number of Records (for demo): {fileCount}
         </label>
         <input
@@ -86,7 +86,7 @@ export default function FileUpload({ onUpload, isLoading }) {
           className="w-full"
           disabled={isLoading}
         />
-        <div className="flex justify-between text-xs text-gray-500">
+        <div className="flex justify-between text-xs text-slate-700">
           <span>10</span>
           <span>500</span>
         </div>
@@ -114,10 +114,10 @@ export default function FileUpload({ onUpload, isLoading }) {
           className="cursor-pointer"
         >
           <div className="text-4xl mb-2">📁</div>
-          <p className="text-gray-600">
+          <p className="text-slate-800">
             Drag and drop your GST filing file here, or click to browse
           </p>
-          <p className="text-sm text-gray-400 mt-1">
+          <p className="text-sm text-slate-600 mt-1">
             Supports JSON and CSV formats
           </p>
         </label>
@@ -133,7 +133,7 @@ export default function FileUpload({ onUpload, isLoading }) {
         </button>
       </div>
 
-      <p className="text-xs text-gray-500 text-center mt-4">
+      <p className="text-xs text-slate-700 text-center mt-4">
         Demo data will be automatically generated for testing
       </p>
     </div>

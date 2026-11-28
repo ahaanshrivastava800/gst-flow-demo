@@ -94,7 +94,7 @@ export default function SyncFilingView({ onUpload, uploadResult, isLoading }) {
             Number of Records
           </label>
           <select 
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg text-slate-900 bg-white"
             value={recordCount}
             onChange={(e) => setRecordCount(parseInt(e.target.value, 10))}
             id="sync-record-count"
